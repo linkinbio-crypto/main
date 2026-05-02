@@ -1,58 +1,53 @@
 #include <iostream>
-#include <Windows.h>
-#include "utils.h"
-#include "hwid.h"
 #include "auth.h"
-
-void EnforceSingleInstance() {
-    HANDLE mutex = CreateMutexA(nullptr, TRUE, "APBreaker_Mutex");
-    if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        std::cout << "[!] Already running.\n";
-        Sleep(1500);
-        ExitProcess(0);
-    }
-}
+#include "hwid.h"
 
 int main() {
-    EnforceSingleInstance();
-    Utils::ClearConsole();
-    Utils::PrintBanner();
-
-    // Get HWID
-    std::string hwid = HWID::Get();
+    // Clear console, show banner
+    system("cls");
+    std::cout << "APBreaker v1.0\n";
+    std::cout << "--------------\n\n";
 
     // Get key from user
     std::string key;
-    std::cout << "  Enter key: ";
+    std::cout << "Enter your key: ";
     std::cin >> key;
-    std::cout << "\n";
 
-    // Validate format locally first
+    // Validate format locally first before hitting server
     if (!Auth::ValidKeyFormat(key)) {
         std::cout << "[!] Invalid key format.\n";
         Sleep(2000);
         return 1;
     }
 
-    // Hit server
-    std::cout << "  Authenticating...\n";
+    // Get HWID
+    std::string hwid = HWID::Get();
+
+    // Hit your server
     Auth::Result result = Auth::Validate(key, hwid);
 
-    if (result != Auth::Result::OK) {
-        Auth::ShowResult(result);
-        return 1;
+    switch (result) {
+        case Auth::Result::OK:
+            std::cout << "[+] Authenticated.\n";
+            break;
+        case Auth::Result::INVALID:
+            std::cout << "[!] Invalid key.\n";
+            Sleep(2000); return 1;
+        case Auth::Result::EXPIRED:
+            std::cout << "[!] Key expired.\n";
+            Sleep(2000); return 1;
+        case Auth::Result::HWID_MISMATCH:
+            std::cout << "[!] HWID mismatch. Contact support.\n";
+            Sleep(2000); return 1;
+        case Auth::Result::BANNED:
+            std::cout << "[!] Key banned.\n";
+            Sleep(2000); return 1;
+        case Auth::Result::SERVER_ERROR:
+            std::cout << "[!] Could not reach auth server.\n";
+            Sleep(2000); return 1;
     }
 
-    std::cout << "  [+] Authenticated successfully.\n\n";
-    Sleep(1000);
-
-    // ── placeholder until RPA is ready ──
-    std::cout << "  [*] APBreaker running...\n";
-    std::cout << "  [*] Press CTRL+C to stop.\n\n";
-
-    while (true) {
-        Sleep(1000);
-    }
-
+    // Auth passed — launch the actual tool
+    Launch();
     return 0;
 }
