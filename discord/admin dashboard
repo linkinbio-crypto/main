@@ -1,0 +1,7 @@
+GET  /admin/keys              -- list all keys
+GET  /admin/keys/:key         -- key details + auth logs
+POST /admin/generate          -- generate keys
+POST /admin/ban               -- ban a key
+POST /admin/reset-hwid        -- reset HWID
+POST /admin/extend            -- extend expiry
+GET  /admin/stats             -- total users, active, banned
